@@ -15,9 +15,12 @@ known_weight = float(input("What is the weight of the object used (in grams) for
 # Take the reading
 hx.zero()
 print("Place the object on the scale")
-time.sleep(3)
-reading = hx.get_raw_data_mean(1) - hx.get_current_offset()
+time.sleep(5)
+reading = hx.get_raw_data_mean(10) - hx.get_current_offset()
 
+reading = int(reading/1000)
+print("Reading: ", reading)
+print("Input Weight: ", known_weight)
 # Calculate calibration factor
 calibration_factor = known_weight/reading
 
