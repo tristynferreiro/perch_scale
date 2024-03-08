@@ -151,16 +151,116 @@ def firstTimeRTCSetup():
         setRTCAsClock()
         checkRTC()
         print("RTC can be read from")
-        print("Current RTC time (SAST):",readRTC())       
+        print("Current RTC time (SAST):",readRTC())   
+        return True    
         
     else:
         enableI2C()
         print("I2C succesfully enabled")
         firstTimeRTCSetup()    
         
+def wifiEnabledCheck():
+    try:
+        result=subprocess.run(["systemctl","is-enabled","wpa_supplicant"],capture_output=True, text=True)
+        if result.stdout.strip() == 'enabled':
+            return True
+            print("WiFi is enabled")
+        else:
+            print("WiFi is disabled\nAttempting to enable...")
+            enableWiFi()
+            wifiEnabledCheck()
+            return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+        
+def enableWiFi():
+    try:
+        subprocess.run(["sudo","systemctl","enable","wpa_supplicant"],check=True)
+        print("Succesfully enabled WiFi")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return False
+        
+def turnOffWiFi():
+    try:
+        subprocess.run(["sudo","systemctl","stop","wpa_supplicant"],check=True)
+        print("Succesfully turned off WiFi")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return False    
+        
+        
+def turnONWiFi():
+    try:
+        subprocess.run(["sudo","systemctl","start","wpa_supplicant"],check=True)
+        print("Succesfully turned on WiFi")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return False          
+        
+def networkConnectedCheck():
+    try:
+        wifi_status = subprocess.run(["iwgetid"],capture_output=True,text=True)
+        if wifi_status.returncode == 0:
+            print("Pi is connected to",wifi_status.stdout.strip())
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
+
+def internetAccess():
+    try:
+        ping_result = subprocess.run(["ping","-c","1","google.com"],capture_output=True,text=True)
+        if ping_result.returncode == 0:
+            print("Pi is connected to the internet")
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+        
+def connectToNetwork(network_name="Hotspot",password="password"):
+    try:
+        #enablePermissionsForWiFi()
+        config_result = subprocess.run(["wpa_passphrase",network_name,password],capture_output=True,text=True,input=password,check=True)
+        network_config = config_result.stdout
+        with open("/etc/wpa_supplicant/wpa_supplicant.conf","a") as f:
+            f.write(network_config)
+        subprocess.run(["sudo","systemctl","restart","wpa_supplicant"],check=True)
+        print("Succesfully connected to",network_name)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return False
+
+def enablePermissionsForWiFi():
+    try:
+        result = subprocess.run(["sudo","chmod", "a+w","/etc/wpa_supplicant/wpa_supplicant.conf"],capture_output=True,text=True)
+        if result.returncode == 0:
+            print("Enabled correct permissions to edit WiFi config files")
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
+
    
 #firstTimeRTCSetup() 
-print(readRTC())
+#print(readRTC())
+#enableWiFi()
+wifiEnabledCheck()
+#connectToNetwork()
+networkConnectedCheck()
+internetAccess()
     
     
 '''
